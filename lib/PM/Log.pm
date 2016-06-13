@@ -24,7 +24,7 @@ sub compare_cb  { ... }
 sub whats_up {
     my ($self, %opts) = @_;
     my $config = PM->handle()->config();
-    confess('bad ts argument') if (
+    confess('bad "after" option') if (
         defined($opts{'after'}) && !is_valid_ts($opts{'after'})
     );
 
