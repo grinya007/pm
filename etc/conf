@@ -1,0 +1,12 @@
+# name of package manager
+pm_name = zypper
+
+# path to zypper history log
+pm_log = /var/log/zypp/history
+
+# maximum time interval to look behind (in seconds)
+pm_max_time = 86400
+
+# maximum count of entries to keep in mind
+pm_max_entries = 100
+
