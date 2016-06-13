@@ -2,10 +2,9 @@ package PM::Log;
 use strict;
 use warnings;
 use Carp qw/confess/;
-
 use IO::File;
 use PM;
-use PM::Utils qw/json_encode/;
+use PM::Utils qw/:TIME/;
 use PM::Utils::FifoCache;
 use PM::Utils::LogSearch;
 
@@ -19,12 +18,74 @@ sub new {
     return $self;
 }
 
+sub format_ts   { ... }
+sub compare_cb  { ... }
+
+sub whats_up {
+    my ($self, %opts) = @_;
+    my $config = PM->handle()->config();
+    confess('bad ts argument') if (
+        defined($opts{'after'}) && !is_valid_ts($opts{'after'})
+    );
+
+    my $ts = $opts{'after'} //
+        unix_to_ts(time() - $config->get('pm_max_time'));
+    
+    $self->_adjust_cache();
+    
+    my $res = [];
+    return $res if ($self->{'_cache'}->is_empty());
+    
+    my $continue = sub {
+        my ($entry) = @_;
+        return undef if (
+            !defined($entry) ||
+            $entry->timestamp() le $ts
+        );
+        push(@$res, $entry->to_hash());
+        return 1;
+    };
+    $self->{'_cache'}->iterate_entries($continue);
+    @$res = reverse @$res;
+    return $res;
+}
+
 sub _init {
     my ($self) = @_;
     my $config = PM->handle()->config();
-    my $cache = PM::Utils::FifoCache->new(
+    $self->{'_cache'} = PM::Utils::FifoCache->new(
         'size'  => $config->get('pm_max_entries')
     );
+    $self->_adjust_cache();
+}
+
+sub _adjust_cache {
+    my ($self) = @_;
+    return if ($self->_check_current_position());
+
+    my $config = PM->handle()->config();
+    my $max_uts = time() - $config->get('pm_max_time');
+    my $max_ts = unix_to_ts($max_uts);
+    my $mr_entry = $self->{'_cache'}->most_recent_entry();
+    if ($mr_entry && $mr_entry->timestamp() ge $max_ts) {
+        my $mr_uts = ts_to_unix($mr_entry);
+        $self->_refill_cache(
+            $self->format_ts($mr_uts),
+            'exclusive' => 1
+        );
+    }
+    else {
+        $self->{'_cache'}->clear();
+        $self->_refill_cache(
+            $self->format_ts($max_uts)
+        );
+    }
+    $self->_set_current_position();
+}
+
+sub _refill_cache {
+    my ($self, $ts, %opts) = @_;
+    my $config = PM->handle()->config();
     my $file = IO::File->new(
         '<' . $config->get('pm_log')
     );
@@ -35,30 +96,32 @@ sub _init {
         'log'   => $file,
         'cmp'   => $self->compare_cb(),
     );
-    $searcher->locate(
-        $self->format_ts(time() - $config->get('pm_max_time'))
-    );
+    $searcher->locate($ts, %opts);
     my $entry_class = ref($self).'::Entry';
     while (!$file->eof()) {
         my $entry = $entry_class->load_from_line(
-            $file->tell(), $file->getline()
+            $file->getline()
         );
         next unless ($entry);
-        $cache->add($entry);
+        $self->{'_cache'}->add($entry);
     }
-    $self->{'_cache'} = $cache;
     $file->close();
 }
 
-sub to_json {
+sub _set_current_position {
     my ($self) = @_;
-    my $entries = $self->{'_cache'}->get_all();
-    @$entries = map { $_->to_hash() } @$entries;
-    return json_encode($entries);
+    my $config = PM->handle()->config();
+    $self->{'_current_position'} =
+        join('_', (stat($config->get('pm_log')))[2, 7]);
 }
 
-sub format_ts   { ... }
-sub compare_cb  { ... }
+sub _check_current_position {
+    my ($self) = @_;
+    my $config = PM->handle()->config();
+    return ($self->{'_current_position'} // '') eq
+        join('_', (stat($config->get('pm_log')))[2, 7]);
+}
+
 
 package PM::Log::Entry;
 use strict;
@@ -71,8 +134,13 @@ use constant 'ATTRS' => {
     'package'   => qr/^[-+\.\~_a-zA-Z0-9]+$/,
     'version'   => qr/^[-+\.\~_a-zA-Z0-9]+$/,
     'arch'      => qr/^[-+\.\~_a-zA-Z0-9]+$/,
-    'position'  => qr/^\d+$/,
 };
+{
+    no strict 'refs';
+    for my $attr (keys %{ ATTRS() }) {
+        *{ __PACKAGE__ . "::$attr" } = sub { $_[0]->{$attr} };
+    }
+}
 
 sub new {
     my ($class, %args) = @_;

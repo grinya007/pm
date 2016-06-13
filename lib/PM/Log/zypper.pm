@@ -2,10 +2,10 @@ package PM::Log::zypper;
 use base 'PM::Log';
 use strict;
 use warnings;
+use feature qw/state/;
 use Carp qw/confess/;
 use PM::Utils qw/is_int/;
 use POSIX qw/strftime/;
-
 
 use constant 'TSRE' => qr/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)|/;
 
@@ -19,12 +19,13 @@ sub format_ts {
 
 sub compare_cb  {
     my ($class) = @_;
-    return sub {
+    state $cb = sub {
         my ($ts, $line) = @_;
         my ($line_ts) = $line =~ TSRE;
         return undef unless (defined $line_ts);
         return $ts cmp $line_ts;
     };
+    return $cb;
 }
 
 package PM::Log::zypper::Entry;
@@ -34,8 +35,8 @@ use warnings;
 use Carp qw/confess/;
 
 sub load_from_line {
-    my ($class, $position, $line) = @_;
-    return undef unless ($line =~ PM::Log::zypper::TSRE());
+    my ($class, $line) = @_;
+    return undef unless ($line =~ PM::Log::zypper::TSRE);
     my ($ts, $action, $package, $version, $arch) = split /\s*\|\s*/, $line;
     return undef unless ($action);
     return undef unless (grep { $action eq $_ } qw/install remove/);
@@ -45,7 +46,6 @@ sub load_from_line {
         'package'   => $package,
         'version'   => $version,
         'arch'      => $arch,
-        'position'  => $position,
     );
 }
 

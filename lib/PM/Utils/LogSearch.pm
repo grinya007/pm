@@ -26,7 +26,7 @@ sub new {
 }
 
 sub locate {
-    my ($self, $ts) = @_;
+    my ($self, $ts, %opts) = @_;
     confess(
         'please provide sought-for timestamp in a '.
         'log file specific format as first argument'
@@ -61,7 +61,12 @@ sub locate {
         my $cmp = $self->{'cmp'}->(
             $ts, $self->{'log'}->getline()
         );
-        last if (defined($cmp) && $cmp <= 0);
+        last if (
+            defined($cmp) && (
+                ($opts{'exclusive'} && $cmp < 0) ||
+                (!$opts{'exclusive'} && $cmp <= 0)
+            )
+        );
         $p = $size;
     }
     $self->{'log'}->seek($p, SEEK_SET);

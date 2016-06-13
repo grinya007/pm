@@ -45,6 +45,7 @@ sub _init {
 
     my $log_class = 'PM::Log::'.$self->{'config'}->get('pm_name');
     eval "require $log_class";
+    confess("failed to load $log_class: $@") if ($@);
 
     $self->{'log_handle'} = $log_class->new();
 }

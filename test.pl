@@ -23,7 +23,7 @@ use lib 'lib';
 #print $cfg->get('pm_name'), "\n";
 
 
-__END__
+#__END__
 use IO::File;
 use PM::Utils::LogSearch;
 
@@ -47,7 +47,8 @@ my $s = PM::Utils::LogSearch->new(
     'cmp' => $c,
 );
 
-$s->locate('2016-06-02 23:32:30');
+#$s->locate('2016-06-07 17:21:27');
+$s->locate('2016-06-07 17:21:27', 'exclusive' => 1);
 printf "read %d bytes in %d lines\n", $r, $rl;
 
 print $l->getline() for 1..10;
