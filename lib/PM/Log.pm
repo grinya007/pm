@@ -28,8 +28,11 @@ sub whats_up {
         defined($opts{'after'}) && !is_valid_ts($opts{'after'})
     );
 
-    my $ts = $opts{'after'} //
-        unix_to_ts(time() - $config->get('pm_max_time'));
+    my $max_uts = time() - $config->get('pm_max_time');
+    my $max_ts = unix_to_ts($max_uts);
+
+    my $ts = $opts{'after'} && $opts{'after'} ge $max_ts ?
+        $opts{'after'} : $max_ts;
     
     $self->_adjust_cache();
     
@@ -68,10 +71,9 @@ sub _adjust_cache {
     my $max_ts = unix_to_ts($max_uts);
     my $mr_entry = $self->{'_cache'}->most_recent_entry();
     if ($mr_entry && $mr_entry->timestamp() ge $max_ts) {
-        my $mr_uts = ts_to_unix($mr_entry);
+        my $mr_uts = ts_to_unix($mr_entry->timestamp());
         $self->_refill_cache(
             $self->format_ts($mr_uts),
-            'exclusive' => 1
         );
     }
     else {
@@ -84,7 +86,7 @@ sub _adjust_cache {
 }
 
 sub _refill_cache {
-    my ($self, $ts, %opts) = @_;
+    my ($self, $ts) = @_;
     my $config = PM->handle()->config();
     my $file = IO::File->new(
         '<' . $config->get('pm_log')
@@ -96,7 +98,7 @@ sub _refill_cache {
         'log'   => $file,
         'cmp'   => $self->compare_cb(),
     );
-    $searcher->locate($ts, %opts);
+    $searcher->locate($ts);
     my $entry_class = ref($self).'::Entry';
     while (!$file->eof()) {
         my $entry = $entry_class->load_from_line(

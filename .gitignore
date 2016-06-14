@@ -1,4 +1,3 @@
 local
-cpanfile.snapshot
 *.swp
 *.swo
