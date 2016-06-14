@@ -2,15 +2,14 @@ package PM::Utils::FifoCache;
 use strict;
 use warnings;
 use Carp qw/confess/;
+use PM::Utils qw/is_int/;
 
 sub new {
     my ($class, %args) = @_;
     confess(
         'please provide size => '.
         '[ integer size of fifo queue ]'
-    ) unless (
-        $args{'size'} && $args{'size'} =~ /^\d+$/
-    );
+    ) unless (is_int($args{'size'}));
 
     return bless({
         'size'      => $args{'size'},

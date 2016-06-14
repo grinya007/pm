@@ -105,7 +105,11 @@ sub _refill_cache {
             $file->getline()
         );
         next unless ($entry);
-        $self->{'_cache'}->add($entry);
+
+        my $mr_entry = $self->{'_cache'}->most_recent_entry();
+        if (!$mr_entry || $mr_entry->chk_sum() ne $entry->chk_sum()) {
+            $self->{'_cache'}->add($entry);
+        }
     }
     $file->close();
 }
@@ -129,6 +133,7 @@ package PM::Log::Entry;
 use strict;
 use warnings;
 use Carp qw/confess/;
+use Digest::MD5 qw/md5_hex/;
 
 use constant 'ATTRS' => {
     'action'    => qr/^(?:install|remove)$/,
@@ -162,7 +167,16 @@ sub new {
 
 sub to_hash {
     my ($self) = @_;
-    return { %{ $self } };
+    return +{ map { $_ => $self->{$_} } keys %{ ATTRS() } };
+}
+
+sub chk_sum {
+    my ($self) = @_;
+    return $self->{'_chk_sum'} if ($self->{'_chk_sum'});
+    $self->{'_chk_sum'} = md5_hex(
+        join('_', map { $self->{$_} } keys %{ ATTRS() })
+    );
+    return $self->{'_chk_sum'};
 }
 
 sub load_from_line { ... }
