@@ -74,7 +74,8 @@ __DATA__
         <div class="header bottom-align-text">
             <span class="logo">pm</span>
             <span class="title">
-                yet another package monitoring system (by Gregory Arefyev)
+                yet another package monitoring system (by Gregory Arefyev <%
+                %><a href="https://github.com/grinya007/pm" target="_blank">github</a>)
             </span>
             <span class="settings pull-right">
                 <pre>Config: package manager name: <%= $pmname %>; <%
@@ -82,37 +83,39 @@ __DATA__
                 %>time limit: <%= $tlimit %> seconds</pre>
             </span>
         </div>
-        <div class="row">
-            <span class="col-sm-6">
-                <h2>installed</h2>
-                <table class="table table-striped log-table install">
-                    <thead>
-                        <tr>
-                            <th>timestamp</th>
-                            <th>package name</th>
-                            <th>version</th>
-                            <th>arch</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-            </span>
-            <span class="col-sm-6">
-                <h2>removed</h2>
-                <table class="table table-striped log-table remove">
-                    <thead>
-                        <tr>
-                            <th>timestamp</th>
-                            <th>package name</th>
-                            <th>version</th>
-                            <th>arch</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-            </span>
-        <div>
+        <div class="container">
+            <div class="row">
+                <span class="col-sm-6">
+                    <h2>installed</h2>
+                    <table class="table table-striped log-table install">
+                        <thead>
+                            <tr>
+                                <th>timestamp</th>
+                                <th>package name</th>
+                                <th>version</th>
+                                <th>arch</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </span>
+                <span class="col-sm-6">
+                    <h2>removed</h2>
+                    <table class="table table-striped log-table remove">
+                        <thead>
+                            <tr>
+                                <th>timestamp</th>
+                                <th>package name</th>
+                                <th>version</th>
+                                <th>arch</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </span>
+            </div>
+        </div>
     </body>
 </html>
