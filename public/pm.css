@@ -18,6 +18,9 @@ span.title {
     font-style: italic;
     color: grey;
 }
+table.log-table tbody tr {
+    display: none;
+}
 table.log-table div {
     display: none;
 }

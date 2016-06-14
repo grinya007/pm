@@ -32,23 +32,28 @@ pm.logTable = function(type) {
     this.tableElement = $('table.'+type+' > tbody');
     this.rows = {};
 };
-pm.logTable.prototype.add = function(row) {
-    if (row.action != this.type)
+pm.logTable.prototype.add = function(entry, opts) {
+    opts = opts || {'animate': true};
+    if (entry.action != this.type)
         throw 'Wrong table for entry';
     var rowElement = $(
         '<tr>'+
-            '<td><div>'+pm.utils.escapeHTML(row.timestamp)+'</div></td>'+
-            '<td><div>'+pm.utils.escapeHTML(row.package)+'</div></td>'+
-            '<td><div>'+pm.utils.escapeHTML(row.version)+'</div></td>'+
-            '<td><div>'+pm.utils.escapeHTML(row.arch)+'</div></td>'+
+            '<td><div>'+pm.utils.escapeHTML(entry.timestamp)+'</div></td>'+
+            '<td><div>'+pm.utils.escapeHTML(entry.package)+'</div></td>'+
+            '<td><div>'+pm.utils.escapeHTML(entry.version)+'</div></td>'+
+            '<td><div>'+pm.utils.escapeHTML(entry.arch)+'</div></td>'+
         '</tr>'
     );
-    rowElement.data('row', row);
-    this.rows[row.package] = rowElement;
+    rowElement.data('entry', entry);
+    this.rows[entry._name] = rowElement;
     this.tableElement.prepend(rowElement);
-    rowElement.find('div').slideDown();
+    if (opts.animate) {
+        rowElement.show();
+        rowElement.find('div').slideDown();
+    }
 };
-pm.logTable.prototype.del = function(name) {
+pm.logTable.prototype.del = function(name, opts) {
+    opts = opts || {'animate': true};
     if (typeof(name) !== 'string')
         throw 'Please provide package name as the first argument';
     var rowElement = this.rows[name];
@@ -56,14 +61,20 @@ pm.logTable.prototype.del = function(name) {
         return;
 
     delete this.rows[name];
-    var divElements = rowElement.find('div');
-    var i = divElements.length;
-    divElements.slideUp(function() {
-        i--;
-        if (i == 0) rowElement.remove();
-    });
+    if (opts.animate) {
+        var divElements = rowElement.find('div');
+        var i = divElements.length;
+        divElements.slideUp(function() {
+            i--;
+            if (i == 0) rowElement.remove();
+        });
+    }
+    else {
+        rowElement.remove();
+    }
 };
-pm.logTable.prototype.trim = function(limit) {
+pm.logTable.prototype.trim = function(limit, opts) {
+    opts = opts || {'animate': true};
     if (typeof(limit) !== 'number')
         throw 'Please provide trim limit as the first argument';
     var length = this.tableElement.find('tr').length;
@@ -72,7 +83,7 @@ pm.logTable.prototype.trim = function(limit) {
         var lastRow = this.tableElement.find(
             'tr:eq('+(length - i)+')'
         );
-        this.del(lastRow.data('row').package);
+        this.del(lastRow.data('entry')._name, opts);
         i--;
     }
 }
@@ -80,6 +91,7 @@ pm.logTable.prototype.trim = function(limit) {
 /***********************
  *  adjustment logics  *
  ***********************/
+pm.initialized = false;
 pm.lockAdjastment = false;
 pm.mostRecentEntry = undefined;
 pm.adjustLog = function() {
@@ -88,7 +100,7 @@ pm.adjustLog = function() {
     var url = '/whats_up'
     if (pm.mostRecentEntry !== undefined)
         url += '?after='+encodeURIComponent(
-            pm.mostRecentEntry.timestamp
+            pm.mostRecentEntry.hash
         );
         $.getJSON(url, pm.handleResponse).fail(function () {
             pm.lockAdjastment = false;
@@ -102,13 +114,23 @@ pm.handleResponse = function(newEntries) {
     for (var i in newEntries) {
         var entry = newEntries[i];
         pm.mostRecentEntry = entry;
-        pm.tables.install.del(entry.package);
-        pm.tables.remove.del(entry.package);
-        pm.tables[entry.action].add(entry);
+        entry._name =
+            entry.package+'_'+entry.version+'_'+entry.arch;
+        pm.tables.install.del(entry._name, {'animate': pm.initialized});
+        pm.tables.remove.del(entry._name, {'animate': pm.initialized});
+        pm.tables[entry.action].add(entry, {'animate': pm.initialized});
     }
     var tableLimit = pm.entriesLimit / 2;
-    pm.tables.install.trim(tableLimit);
-    pm.tables.remove.trim(tableLimit);
+    pm.tables.install.trim(tableLimit, {'animate': pm.initialized});
+    pm.tables.remove.trim(tableLimit, {'animate': pm.initialized});
+
+    if (!pm.initialized) {
+        pm.tables.install.tableElement.children().show();
+        pm.tables.install.tableElement.find('div').slideDown();
+        pm.tables.remove.tableElement.children().show();
+        pm.tables.remove.tableElement.find('div').slideDown();
+        pm.initialized = true;
+    }
     pm.lockAdjastment = false;
 };
 

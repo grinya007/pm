@@ -21,11 +21,13 @@ sub new {
 
 sub add {
     my ($self, $value) = @_;
+    my $replaced_value = $self->{'_queue'}[$self->{'_tail'}];
     $self->{'_queue'}[$self->{'_tail'}] = $value;
     $self->{'_is_empty'} = 0;
     $self->{'_tail'} =
         $self->{'_tail'} == ($self->{'size'} - 1) ?
         0 : ($self->{'_tail'} + 1);
+    return $replaced_value;
 }
 
 sub is_empty {

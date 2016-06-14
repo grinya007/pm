@@ -1,7 +1,7 @@
 # name of package manager
-pm_name = zypper
+pm_name = zypp
 
-# path to zypper history log
+# path to zypp history log
 pm_log = /var/log/zypp/history
 
 # maximum time interval to look behind (in seconds)

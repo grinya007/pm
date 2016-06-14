@@ -24,16 +24,11 @@ sub compare_cb  { ... }
 sub whats_up {
     my ($self, %opts) = @_;
     my $config = PM->handle()->config();
-    confess('bad "after" option') if (
-        defined($opts{'after'}) && !is_valid_ts($opts{'after'})
+    PM::Log::Exception::BadAfterOpt->throw() if (
+        defined($opts{'after'}) &&
+        $opts{'after'} !~ PM::Log::Entry::ATTRS()->{'hash'}
     );
 
-    my $max_uts = time() - $config->get('pm_max_time');
-    my $max_ts = unix_to_ts($max_uts);
-
-    my $ts = $opts{'after'} && $opts{'after'} ge $max_ts ?
-        $opts{'after'} : $max_ts;
-    
     $self->_adjust_cache();
     
     my $res = [];
@@ -42,8 +37,10 @@ sub whats_up {
     my $continue = sub {
         my ($entry) = @_;
         return undef if (
-            !defined($entry) ||
-            $entry->timestamp() le $ts
+            !defined($entry) || (
+                $opts{'after'} &&
+                $entry->hash() eq $opts{'after'}
+            )
         );
         push(@$res, $entry->to_hash());
         return 1;
@@ -56,8 +53,9 @@ sub whats_up {
 sub _init {
     my ($self) = @_;
     my $config = PM->handle()->config();
+    $self->{'_whats_in_cache'} = {};
     $self->{'_cache'} = PM::Utils::FifoCache->new(
-        'size'  => $config->get('pm_max_entries')
+        'size' => $config->get('pm_max_entries'),
     );
     $self->_adjust_cache();
 }
@@ -104,12 +102,15 @@ sub _refill_cache {
         my $entry = $entry_class->load_from_line(
             $file->getline()
         );
-        next unless ($entry);
-
-        my $mr_entry = $self->{'_cache'}->most_recent_entry();
-        if (!$mr_entry || $mr_entry->chk_sum() ne $entry->chk_sum()) {
-            $self->{'_cache'}->add($entry);
-        }
+        next if (
+            !$entry ||
+            exists($self->{'_whats_in_cache'}{$entry->hash()})
+        );
+        my $replaced_entry = $self->{'_cache'}->add($entry);
+        $self->{'_whats_in_cache'}{$entry->hash()} = $entry;
+        delete(
+            $self->{'_whats_in_cache'}{$replaced_entry->hash()}
+        ) if ($replaced_entry);
     }
     $file->close();
 }
@@ -128,12 +129,16 @@ sub _check_current_position {
         join('_', (stat($config->get('pm_log')))[2, 7]);
 }
 
+package PM::Log::Exception::BadAfterOpt;
+sub throw {
+    my ($class) = @_;
+    die bless(\$class, $class);
+}
 
 package PM::Log::Entry;
 use strict;
 use warnings;
 use Carp qw/confess/;
-use Digest::MD5 qw/md5_hex/;
 
 use constant 'ATTRS' => {
     'action'    => qr/^(?:install|remove)$/,
@@ -141,6 +146,7 @@ use constant 'ATTRS' => {
     'package'   => qr/^[-+\.\~_a-zA-Z0-9]+$/,
     'version'   => qr/^[-+\.\~_a-zA-Z0-9]+$/,
     'arch'      => qr/^[-+\.\~_a-zA-Z0-9]+$/,
+    'hash'      => qr/^[a-zA-Z0-9]+$/,
 };
 {
     no strict 'refs';
@@ -168,15 +174,6 @@ sub new {
 sub to_hash {
     my ($self) = @_;
     return +{ map { $_ => $self->{$_} } keys %{ ATTRS() } };
-}
-
-sub chk_sum {
-    my ($self) = @_;
-    return $self->{'_chk_sum'} if ($self->{'_chk_sum'});
-    $self->{'_chk_sum'} = md5_hex(
-        join('_', map { $self->{$_} } keys %{ ATTRS() })
-    );
-    return $self->{'_chk_sum'};
 }
 
 sub load_from_line { ... }

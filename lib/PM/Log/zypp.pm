@@ -1,4 +1,4 @@
-package PM::Log::zypper;
+package PM::Log::zypp;
 use base 'PM::Log';
 use strict;
 use warnings;
@@ -28,24 +28,28 @@ sub compare_cb  {
     return $cb;
 }
 
-package PM::Log::zypper::Entry;
+package PM::Log::zypp::Entry;
 use base 'PM::Log::Entry';
 use strict;
 use warnings;
 use Carp qw/confess/;
+use Digest::MD5 qw/md5_hex/;
 
 sub load_from_line {
     my ($class, $line) = @_;
-    return undef unless ($line =~ PM::Log::zypper::TSRE);
+    return undef unless ($line =~ PM::Log::zypp::TSRE);
     my ($ts, $action, $package, $version, $arch) = split /\s*\|\s*/, $line;
     return undef unless ($action);
     return undef unless (grep { $action eq $_ } qw/install remove/);
     return $class->new(
-        'action'    => $action,
         'timestamp' => $ts,
+        'action'    => $action,
         'package'   => $package,
         'version'   => $version,
         'arch'      => $arch,
+        'hash'      => md5_hex(
+            join('$$', $ts, $action, $package, $version, $arch)
+        ),
     );
 }
 

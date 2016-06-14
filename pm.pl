@@ -5,7 +5,6 @@ use FindBin qw/$RealBin/;
 use lib "$RealBin/lib";
 
 use PM;
-use PM::Utils qw/:TIME/;
 my $pm = PM->new('app_dir' => $RealBin);
 
 get '/' => sub {
@@ -21,16 +20,23 @@ get '/whats_up' => sub {
     my ($c) = @_;
 
     my $tail;
-    if (my $ts = $c->param('after')) {
-
-        return $c->render(
-            'text'      => 'Invalid timestamp!',
-            'status'    => 400
-        ) unless (is_valid_ts($ts));
-
-        $tail = $pm->log_handle()->whats_up(
-            'after' => $ts
-        );
+    if (my $hash = $c->param('after')) {
+        eval {
+            $tail = $pm->log_handle()->whats_up(
+                'after' => $hash
+            );
+        };
+        if ($@) {
+            if (ref($@) eq 'PM::Log::Exception::BadAfterOpt') {
+                return $c->render(
+                    'text'      => 'Invalid after param!',
+                    'status'    => 400
+                );
+            }
+            else {
+                die $@;
+            }
+        }
     }
     else {
         $tail = $pm->log_handle()->whats_up();
