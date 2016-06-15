@@ -24,6 +24,8 @@ our %EXPORT_TAGS = (
     push @EXPORT_OK, keys %export;
 }
 
+# efficient test of value to be integer
+# performs twice as faster than $i =~ /^\d+$/
 sub is_int {
     my ($int) = @_;
     return undef unless (defined($int));
@@ -36,6 +38,7 @@ sub is_int {
 use constant 'TSRE' => 
     qr/^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}):(\d{2})(?:(\.\d{1,9}))?)?$/;
 
+# YYYY-mm-dd HH:MM:SS timestamp validation
 sub is_valid_ts {
     my ($ts) = @_;
     return undef unless ($ts);
@@ -45,6 +48,15 @@ sub is_valid_ts {
     };
 }
 
+# NOTE:
+#   both ts_to_unix() and unix_to_ts()
+#   are built on top of timelocal() and localtime()
+#   respectively hence the YYYY-mm-dd HH:MM:SS timestamp
+#   will have timezone offset and the unix epoch timestamp
+#   will not
+
+# YYYY-mm-dd HH:MM:SS timestamp conversion
+# to unix epoch timestamp
 sub ts_to_unix {
     my ($ts) = @_;
     my $unix = is_valid_ts($ts);
@@ -54,6 +66,7 @@ sub ts_to_unix {
     return $unix;
 }
 
+# vice versa
 sub unix_to_ts {
     my ($unix) = @_;
     confess('bad unix ts') unless (is_int($unix));

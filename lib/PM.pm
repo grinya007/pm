@@ -46,6 +46,12 @@ sub _init {
     my $log_class = 'PM::Log::'.$self->{'config'}->get('pm_name');
     eval "require $log_class";
     confess("failed to load $log_class: $@") if ($@);
+    
+    my $log_entry_class = $log_class.'::Entry';
+    unless ($log_entry_class->isa('PM::Log::Entry')) {
+        eval "require $log_entry_class";
+        confess("failed to load $log_entry_class: $@") if ($@);
+    }
 
     $self->{'log_handle'} = $log_class->new();
 }

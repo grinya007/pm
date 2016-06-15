@@ -7,7 +7,7 @@ use Carp qw/confess/;
 use PM::Utils qw/is_int/;
 use POSIX qw/strftime/;
 
-use constant 'TSRE' => qr/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)|/;
+use constant 'TSRE' => qr/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)\|/;
 
 sub format_ts {
     my ($class, $ts) = @_;
