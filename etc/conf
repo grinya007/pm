@@ -10,3 +10,6 @@ pm_max_time = 86400
 # maximum count of entries to keep in mind
 pm_max_entries = 100
 
+# web-client refresh interval (in milliseconds)
+pm_refresh = 1000
+

@@ -16,12 +16,16 @@ sub new {
     confess('failed to open config file: '.$!) unless (
         open($fh, '<', $args{'file'})
     );
-    my $cfg_hash = $class->_parse_lines([<$fh>]);
+    my $cfg = $class->_parse_lines([<$fh>]);
     close($fh);
+
+    for my $key (keys %$cfg) {
+        $cfg->{$key} = $ENV{uc($key)} // $cfg->{$key};
+    }
 
     return bless({
         'file' => $args{'file'},
-        '_cfg' => $cfg_hash,
+        '_cfg' => $cfg,
     }, $class);
 }
 
@@ -38,15 +42,12 @@ sub get {
 
 sub _parse_lines {
     my ($class, $lines) = @_;
-    my $cfg = {
+    my $cfg = +{
         map {
             /^\s*([_a-zA-Z0-9]+)\s*=\s*('|")?(.*?)(?(2)\2)\s*$/;
             $1 ? ( $1 => $3 ) : ()
         } @$lines
     };
-    for my $key (keys %$cfg) {
-        $cfg->{$key} = $ENV{uc($key)} // $cfg->{$key};
-    }
     return $cfg;
 }
 
