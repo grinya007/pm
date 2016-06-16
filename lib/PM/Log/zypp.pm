@@ -7,7 +7,16 @@ use Carp qw/confess/;
 use PM::Utils qw/:TIME is_int/;
 use POSIX qw/strftime/;
 
+#
+#   Description
+#
+#   The driver module for monitoring zypp package
+#   manager which comes with openSUSE and
+#   SUSE Linux Enterprise OS's
+#
+
 use constant 'TSRE' => qr/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)\|/;
+
 
 sub parse_ts_cb  {
     my ($class) = @_;

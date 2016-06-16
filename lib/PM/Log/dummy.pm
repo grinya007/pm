@@ -4,6 +4,13 @@ use strict;
 use warnings;
 use feature qw/state/;
 
+#
+#   Description
+#
+#   The dummy driver module created for diversity
+#   of examples. It is also used for testing purposes.
+#
+
 use constant 'TSRE' => qr/^(\d+)\|/;
 
 sub parse_ts_cb  {
