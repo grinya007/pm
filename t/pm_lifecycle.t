@@ -1,6 +1,7 @@
 use strict;
 use Test::More;
 use Test::MockTime qw/set_fixed_time/;
+use POSIX qw/tzset/;
 
 use FindBin qw/$RealBin/;
 use lib "$RealBin/../lib";
@@ -10,6 +11,8 @@ BEGIN {
     $ENV{'PM_LOG'}          = __FILE__;
     $ENV{'PM_MAX_TIME'}     = 600;
     $ENV{'PM_MAX_ENTRIES'}  = 5;
+    $ENV{'TZ'}              = 'Europe/London';
+    tzset();
 };
 
 set_fixed_time(1234568888);
@@ -47,7 +50,7 @@ ok(
 is_deeply(
     $entries->[0],
     {
-        'timestamp' => '2009-02-14 02:44:10',
+        'timestamp' => '2009-02-13 23:44:10',
         'action'    => 'install',
         'package'   => 'lsscsi',
         'version'   => '0.27-4.1.2',
@@ -60,7 +63,7 @@ is_deeply(
 is_deeply(
     $entries->[-1],
     {
-        'timestamp' => '2009-02-14 02:48:03',
+        'timestamp' => '2009-02-13 23:48:03',
         'action'    => 'install',
         'package'   => 'libx86emu1',
         'version'   => '1.1-22.1.2',
@@ -82,7 +85,7 @@ ok(
 is_deeply(
     $more_entries->[0],
     {
-        'timestamp' => '2009-02-14 02:45:06',
+        'timestamp' => '2009-02-13 23:45:06',
         'action'    => 'remove',
         'package'   => 'libz1',
         'version'   => '1.2.8-5.1.2',
