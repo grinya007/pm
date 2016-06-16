@@ -3,26 +3,16 @@ use base 'PM::Log';
 use strict;
 use warnings;
 use feature qw/state/;
-use Carp qw/confess/;
-use PM::Utils qw/is_int/;
 
 use constant 'TSRE' => qr/^(\d+)\|/;
 
-sub format_ts {
-    my ($class, $ts) = @_;
-    confess('bad ts arg') unless (
-        is_int($ts)
-    );
-    return $ts;
-}
-
-sub compare_cb  {
+sub parse_ts_cb  {
     my ($class) = @_;
     state $cb = sub {
-        my ($ts, $line) = @_;
+        my ($line) = @_;
         my ($line_ts) = $line =~ TSRE;
         return undef unless (defined $line_ts);
-        return $ts <=> $line_ts;
+        return $line_ts;
     };
     return $cb;
 }

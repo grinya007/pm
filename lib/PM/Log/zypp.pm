@@ -4,26 +4,18 @@ use strict;
 use warnings;
 use feature qw/state/;
 use Carp qw/confess/;
-use PM::Utils qw/is_int/;
+use PM::Utils qw/:TIME is_int/;
 use POSIX qw/strftime/;
 
 use constant 'TSRE' => qr/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)\|/;
 
-sub format_ts {
-    my ($class, $ts) = @_;
-    confess('bad ts arg') unless (
-        is_int($ts)
-    );
-    return strftime('%F %T', localtime($ts));
-}
-
-sub compare_cb  {
+sub parse_ts_cb  {
     my ($class) = @_;
     state $cb = sub {
-        my ($ts, $line) = @_;
+        my ($line) = @_;
         my ($line_ts) = $line =~ TSRE;
         return undef unless (defined $line_ts);
-        return $ts cmp $line_ts;
+        return ts_to_unix($line_ts);
     };
     return $cb;
 }

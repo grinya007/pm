@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use Carp qw/confess/;
 use Fcntl qw/SEEK_SET/;
+use PM::Utils qw/is_int/;
 
 #
 #   Description
@@ -12,9 +13,6 @@ use Fcntl qw/SEEK_SET/;
 #   log entries must have been written in strict
 #   timestamp ascending order. Yet it's absolutely normal
 #   to have non-unique timestamps in the log.
-#   The comparison itself isn't implemented here hence it's the
-#   caller-side turn to decide how to parse and compare
-#   timestamps.
 #
 #   In example, it produces not more than 40 seek calls
 #   and reads not more than 5 Kb while searching for
@@ -36,14 +34,14 @@ sub new {
         !$args{'log'}->opened()
     );
     confess(
-        'please provide cmp => '.
-        '[ callback function that compares ts against the line ]'
+        'please parse_ts => '.
+        '[ callback function that parses ts from given line ]'
     ) if (
-        ref($args{'cmp'}) ne 'CODE'
+        ref($args{'parse_ts'}) ne 'CODE'
     );
     return bless({
-        'log' => $args{'log'},
-        'cmp' => $args{'cmp'},
+        'log'       => $args{'log'},
+        'parse_ts'  => $args{'parse_ts'},
     }, $class);
 }
 
@@ -51,8 +49,8 @@ sub locate {
     my ($self, $ts) = @_;
     confess(
         'please provide sought-for timestamp in a '.
-        'log file specific format as first argument'
-    ) unless (defined $ts);
+        'unix epoch format'
+    ) unless (is_int($ts));
     my $size = ($self->{'log'}->stat())[7];
 
     # starting from these Fibonacci numbers because
@@ -68,6 +66,7 @@ sub locate {
     # here we go
     #   $k - keeps index of current Fibonacci number
     #        it (index) decreases by one on each iteration
+    #        note that $fib[0] == 144
     #   $i - keeps pointer in file from where we will
     #        start scanning in search of fortune
     #        to compare something against sought-for timestamp
@@ -76,24 +75,27 @@ sub locate {
     my ($k, $i, $p) = ($#fib, $fib[-1], 0);
     while ($k > 0 && $i >= 0) {
 
-        # will pull copmarison result
-        # out of inner loop
-        my $cmp;
+        # will pull timestamp parsing
+        # result out of inner loop
+        my $line_ts;
 
         # seek
         $self->{'log'}->seek($i, SEEK_SET);
         # and -destroy- read
-        # please refer to compare_cb() method description
+        # please refer to parse_ts_cb() method description
         # given in lib/PM/Log.pm for details on how
-        # it works
+        # it ment to work
         while (!$self->{'log'}->eof()) {
-            $cmp = $self->{'cmp'}->(
-                $ts, $self->{'log'}->getline()
+            $line_ts = $self->{'parse_ts'}->(
+                $self->{'log'}->getline()
             );
-            last if (defined $cmp);
+            last if (defined($line_ts));
         }
+        confess(
+            'bad return value from parse_ts callback'
+        ) if (defined($line_ts) && !is_int($line_ts));
 
-        if (defined($cmp) && $cmp > 0) {
+        if (defined($line_ts) && $line_ts < $ts) {
             
             # the sought-for timestamp is greater than
             # one that we met on current iteration
@@ -111,7 +113,7 @@ sub locate {
 
             # the sought-for timestamp is less or equal than
             # the one that we have last seen or even we
-            # possibly don't have a result of comparison,
+            # currently don't have any comparable timestamp,
             # going up, there is nothing to take from here,
             # note that outer loop will break in case we will
             # reach the beginning of the file
@@ -124,8 +126,8 @@ sub locate {
     $self->{'log'}->seek($p, SEEK_SET);
     while (!$self->{'log'}->eof()) {
         $p = $self->{'log'}->tell();
-        my $cmp = $self->{'cmp'}->(
-            $ts, $self->{'log'}->getline()
+        my $line_ts = $self->{'parse_ts'}->(
+            $self->{'log'}->getline()
         );
 
         # in case we've found the first timestamp in file
@@ -133,7 +135,7 @@ sub locate {
         # or that is greater (which means that there is
         # no equal timestamp in file) we break the loop
         # and $p will point to it
-        last if (defined($cmp) && $cmp <= 0);
+        last if (defined($line_ts) && $line_ts >= $ts);
 
         # setting $p to eof otherwise
         $p = $size;

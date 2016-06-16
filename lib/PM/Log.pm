@@ -52,24 +52,18 @@ sub new {
     return $self;
 }
 
-# format_ts: must be implemented in subclass
-#   it takes unix_epoch_ts as the first argument and
-#   returns a ts string in package manager's log specific format
-sub format_ts   { ... }
-
-# compare_cb: must be implemented in subclass
+# parse_ts_cb: must be implemented in subclass
 #   takes no arguments
 #   returns reference to a callback function
 #   that will be called on each line of log
-#   upon searching
-#   the function will be given two arguments:
-#       - sought-for timestamp in log specific format
-#       - line of log
-#   if the line contains timestamp it is compared
-#   to sought-for timestamp and result (-1|0|1) returned
-#   if the line is not applicable for comparison
-#   callback returns undef, so the line will be simply skipped
-sub compare_cb  { ... }
+#   upon searching, the function will be given
+#   a line of log as the single argument
+#   if the line contains log specific timestamp
+#   it is parsed and returned as unix epoch integer of seconds
+#   for futher comparison against sought-for timestamp with <=> operator
+#   else if line doesn't contain timestamp undef is returned,
+#   so the line will be simply skipped
+sub parse_ts_cb  { ... }
 
 # the main and the only interface the whole system is all about
 # returns an array reference of log entries from cache (unblessed to hashes)
@@ -133,17 +127,15 @@ sub _adjust_cache {
     return if ($self->_check_current_position());
 
     my $config = PM->handle()->config();
-    my $max_uts = time() - $config->get('pm_max_time');
-    my $max_ts = unix_to_ts($max_uts);
+    my $min_uts = time() - $config->get('pm_max_time');
+    my $min_ts = unix_to_ts($min_uts);
     my $mr_entry = $self->{'_cache'}->most_recent_entry();
     
-    if ($mr_entry && $mr_entry->timestamp() ge $max_ts) {
+    if ($mr_entry && $mr_entry->timestamp() ge $min_ts) {
         
         # we still hope to escape doing a minor tailing
         my $mr_uts = ts_to_unix($mr_entry->timestamp());
-        $self->_refill_cache(
-            $self->format_ts($mr_uts),
-        );
+        $self->_refill_cache('from' => $mr_uts);
     }
     else {
 
@@ -151,9 +143,7 @@ sub _adjust_cache {
         # interval reading like we done initially
         $self->{'_cache'}->clear();
         %{ $self->{'_whats_in_cache'} } = ();
-        $self->_refill_cache(
-            $self->format_ts($max_uts)
-        );
+        $self->_refill_cache('from' => $min_uts);
     }
 
     # remember current file size and inode number
@@ -162,7 +152,7 @@ sub _adjust_cache {
 
 # opening/searching/reading/closing log file here
 sub _refill_cache {
-    my ($self, $ts) = @_;
+    my ($self, %opts) = @_;
     my $config = PM->handle()->config();
     
     # open
@@ -175,10 +165,10 @@ sub _refill_cache {
 
     # search
     my $searcher = PM::Utils::LogSearch->new(
-        'log'   => $file,
-        'cmp'   => $self->compare_cb(),
+        'log'       => $file,
+        'parse_ts'  => $self->parse_ts_cb(),
     );
-    $searcher->locate($ts);
+    $searcher->locate($opts{'from'});
 
     # read
     my $entry_class = ref($self).'::Entry';
