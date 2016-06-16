@@ -38,6 +38,7 @@ use Digest::MD5 qw/md5_hex/;
 
 sub load_from_line {
     my ($class, $line) = @_;
+    chomp($line);
     return undef unless ($line =~ PM::Log::zypp::TSRE);
     my ($ts, $action, $package, $version, $arch) = split /\s*\|\s*/, $line;
     return undef unless ($action);

@@ -34,6 +34,7 @@ use PM::Utils qw/:TIME/;
 
 sub load_from_line {
     my ($class, $line) = @_;
+    chomp($line);
     return undef unless ($line =~ PM::Log::dummy::TSRE);
     my ($ts, $action, $package, $version, $arch) = split /\s*\|\s*/, $line;
     return undef unless ($action);

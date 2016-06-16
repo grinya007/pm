@@ -197,3 +197,19 @@ DISTRIBUTIONS
       JSON::PP 2.27103
       Pod::Simple 3.09
       Time::Local 1.2
+  Mojolicious-Plugin-DOCRenderer-4.00
+    pathname: E/EX/EXC/Mojolicious-Plugin-DOCRenderer-4.00.tar.gz
+    provides:
+      Mojolicious::Plugin::DOCRenderer 4.00
+    requirements:
+      ExtUtils::MakeMaker 0
+      Mojolicious 4.99
+  Test-MockTime-0.15
+    pathname: D/DD/DDICK/Test-MockTime-0.15.tar.gz
+    provides:
+      Test::MockTime 0.15
+    requirements:
+      ExtUtils::MakeMaker 0
+      Test::More 0
+      Time::Local 0
+      Time::Piece 1.08
