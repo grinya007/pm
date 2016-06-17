@@ -6,7 +6,7 @@ in a real time. Whether the package is installed or removed it will be shown on 
 
 ![Screen Shot](public/screenshot.png)
 
-The general disign decision is to build monitoring system relying on package manager's
+The general design decision is to build monitoring system relying on package manager's
 history log file.
 
 Advantages of this approach:
