@@ -19,13 +19,12 @@ Disadvantages:
 - from one package manager to another the format of log file may differ dramatically
 
 What's under the hoods:
-- efficient log file entry searcher module with Fibonacci search technique implementation that allows to
+- efficient log file entry searcher [module](lib/PM/Utils/LogSearch.pm) with Fibonacci search technique implementation that allows to
 perform search of a particular entry in the log file producing relatively few interaction with the filesystem
-- a simple yet efficient FIFO queue implementation that allows to keep most recent entries cached and accessible in
+- a simple yet efficient FIFO queue [implementation](lib/PM/Utils/FifoCache.pm) that allows to keep most recent entries cached and accessible in
 exactly same order as they come
-- a tiny package manager's log driver framework that allows to easily create a variety of drivers by implemeting
-of just two mandatory methods concerned with log file parsing
-- websocket based client application
+- a tiny package manager's log driver [framework](lib/PM/Log.pm) that allows to easily create a variety of drivers by implemeting of just two mandatory methods concerned with log file parsing
+- websocket based client [application](public/pm.js)
 - complete verbose documentation of almost each line of code
 
 Trade-offs of current version:
