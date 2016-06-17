@@ -32,7 +32,7 @@ Trade-offs of current version:
 - absolutely non-interactive web-client application
 - actions taken by package manager other than install or remove are currently not displayed on the dashboard
 
-So here we go, three steps to check it out on openSUSE box:
+So here we go, three steps to check it out on openSUSE box (assuming the ```docker``` is installed and running):
 ```
 curl https://raw.githubusercontent.com/grinya007/pm/master/Dockerfile --output Dockerfile
 docker build -t grinya007/pm .
