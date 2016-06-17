@@ -207,10 +207,11 @@ pm.logTable.prototype.trim = function(limit, opts) {
         throw 'Please provide trim limit as the first argument';
     var length = this.tableElement.children('tr').length;
     var i = length - limit;
-    while (i > 0) {
+    while (i > 1) {
         var lastRow = this.tableElement.children(
             'tr:eq('+(length - i)+')'
         );
+        if (lastRow.length == 0) break;
         this.del(lastRow.data('entry')._name, opts);
         i--;
     }
