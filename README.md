@@ -1,7 +1,7 @@
 Package monitoring
 ==================
 
-A simple web application that allows to watch what happens to the packages in the system
+A simple web application that allows to watch what's happening to the packages in the system
 in a real time. Whether the package is installed or removed it will be shown on the dashboard.
 
 ![Screen Shot](public/screenshot.png)
